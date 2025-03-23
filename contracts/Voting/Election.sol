@@ -2,7 +2,9 @@
 pragma solidity ^0.8.4;
 
 contract Election {
-
+    error Voter__Already_Voted();
+    error Voter__Has__No_Right_To_Vote();
+    error Only__Chairperson_Can_Choose_Voters();
     // It will represent a single voter.
     struct Voter {
         uint weight; // weight is accumulated by delegation
@@ -46,14 +48,13 @@ contract Election {
     // Give `voter` the right to vote on this ballot.
     // May only be called by `chairperson`.
     function giveRightToVote(address voter) external {        
-        require(
-            msg.sender == chairperson,
-            "Only chairperson can give right to vote."
-        );
-        require(
-            !voters[voter].voted,
-            "The voter already voted."
-        );
+        if(msg.sender!=chairperson){
+            revert Only__Chairperson_Can_Choose_Voters();
+        }
+        if(voters[voter].voted){
+            revert Voter__Already_Voted() ;
+        }
+
         require(voters[voter].weight == 0);
         voters[voter].weight = 1;
     }
@@ -62,9 +63,12 @@ contract Election {
     function delegate(address to) external {
         // assigns reference
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "You have no right to vote");
-        require(!sender.voted, "You already voted.");
-
+        if(sender.weight==0){
+            revert Voter__Has__No_Right_To_Vote();
+        }
+        if(sender.voted){
+            revert Voter__Already_Voted(); 
+        }
         require(to != msg.sender, "Self-delegation is disallowed.");
         while (voters[to].delegate != address(0)) {
             to = voters[to].delegate;
@@ -96,8 +100,12 @@ contract Election {
     /// to proposal `proposals[proposal].name`.
     function vote(uint proposal) external {
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "Has no right to vote");
-        require(!sender.voted, "Already voted.");
+        if(sender.weight==0){
+            revert Voter__Has__No_Right_To_Vote();
+        }
+        if(sender.voted){
+            revert Voter__Already_Voted();
+        }
         sender.voted = true;
         sender.vote = proposal;
 
