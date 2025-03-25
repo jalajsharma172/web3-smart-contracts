@@ -5,7 +5,8 @@ pragma solidity ^0.8.9;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TimeLock{
-    
+    error Only__Owner_Can_Withdraw();
+    error  Cannot_Withdraw_Before_EndTime(uint end_Time );
     uint public immutable endTime; //end time
     address payable public immutable owner; 
 
@@ -22,9 +23,12 @@ contract TimeLock{
     receive() external payable {}
 
     function withdraw(address token, uint amount) external {
-        require(msg.sender == owner, "Only owner can withdraw");
-        require(block.timestamp >= endTime, "Cannot withdraw before endTime");
-
+        if(msg.sender!=owner){
+            revert Only__Owner_Can_Withdraw(); 
+        }
+        if(block.timestamp<endTime){
+            revert Cannot_Withdraw_Before_EndTime(endTime);
+        }
         //number of tokens = 0, so we are just withdrawing ETH
         if(token == address(0)){
             owner.transfer(amount);

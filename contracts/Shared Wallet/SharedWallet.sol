@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 contract SharedWallet {
+    error Insufficient__Balance( );
     address private _owner;
 
     mapping(address => bool) private _owners;
@@ -44,14 +45,18 @@ contract SharedWallet {
 
     // withdraw fund from the shared wallet into the signer of transaction
     function withdraw(uint256 amount) public validOwner {
-        require(address(this).balance >= amount);
+        if(address(this).balance<amount){
+            revert Insufficient__Balance(); 
+        }
         payable(msg.sender).transfer(amount);
         emit WithdrawFunds(msg.sender, amount);
     }
 
     // transfer fund from the shared wallet into another address
     function transferTo(address payable to, uint256 amount) public validOwner {
-        require(address(this).balance >= amount);
+        if(address(this).balance<amount){
+            revert Insufficient__Balance(); 
+        }
         payable(to).transfer(amount);
         emit TransferFunds(msg.sender, to, amount);
     }
